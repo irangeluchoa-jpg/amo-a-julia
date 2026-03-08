@@ -52,6 +52,14 @@
       from { opacity: 0; }
       to   { opacity: 1; }
     }
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(60px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-60px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
     @keyframes blink {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0; }
@@ -282,8 +290,112 @@
       );
     }
 
+    // Carrossel de fotos
+    const FOTOS = [
+      { src: "fotos/IMG-20260201-WA0102.jpg",  msg: "Esse abraço é o meu lugar favorito no mundo inteiro 🥰" },
+      { src: "fotos/IMG-20260308-WA0034.jpg",  msg: "Adoro o seu sorriso... ele ilumina qualquer lugar ✨" },
+      { src: "fotos/IMG-20260308-WA0032.jpg",  msg: "Esse jeito fofo seu me faz apaixonar todo dia 🤓💕" },
+      { src: "fotos/IMG-20260308-WA0033.jpg",  msg: "Você é tão linda que dói no coração te olhar assim 😍" },
+      { src: "fotos/WA_1772998253772.jpeg",    msg: "Desde pequenininha já era incrível... e só foi ficando mais linda 💖" },
+      { src: "fotos/IMG-20260201-WA0113.jpg",  msg: "Quero ficar pertinho de você para sempre, assim, do seu lado 🌸" },
+    ];
+
+    function PhotoCarousel() {
+      const [idx, setIdx] = useState(0);
+      const [dir, setDir] = useState(1); // 1 = next, -1 = prev
+      const [animKey, setAnimKey] = useState(0);
+
+      const go = (newIdx, direction) => {
+        setDir(direction);
+        setAnimKey(k => k + 1);
+        setIdx(newIdx);
+      };
+
+      const prev = () => go((idx - 1 + FOTOS.length) % FOTOS.length, -1);
+      const next = () => go((idx + 1) % FOTOS.length, 1);
+
+      // Swipe support
+      const touchStartX = useRef(null);
+      const onTouchStart = e => { touchStartX.current = e.touches[0].clientX; };
+      const onTouchEnd = e => {
+        if (touchStartX.current === null) return;
+        const dx = e.changedTouches[0].clientX - touchStartX.current;
+        if (dx < -40) next();
+        else if (dx > 40) prev();
+        touchStartX.current = null;
+      };
+
+      const foto = FOTOS[idx];
+
+      return React.createElement("div", {
+        style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "24px 16px", textAlign: "center", maxWidth: 460, margin: "0 auto", width: "100%", animation: "fadeInUp 0.6s ease-out" }
+      },
+        React.createElement("div", { style: { fontSize: "clamp(1.3rem,4vw,1.8rem)", color: "#8b1a4a", fontWeight: "bold", textShadow: "1px 1px 10px rgba(255,143,171,0.6)" } }, "Nossa história em fotos 📸💕"),
+
+        // Foto container
+        React.createElement("div", {
+          key: animKey,
+          onTouchStart, onTouchEnd,
+          style: {
+            width: "100%", position: "relative", borderRadius: 24,
+            overflow: "hidden", boxShadow: "0 12px 48px rgba(201,24,74,0.25)",
+            border: "3px solid rgba(255,143,171,0.5)",
+            animation: `slideIn${dir > 0 ? "Right" : "Left"} 0.4s ease-out`,
+            background: "#ffb7c5"
+          }
+        },
+          React.createElement("img", {
+            src: foto.src, alt: "",
+            style: { width: "100%", display: "block", maxHeight: "55vw", objectFit: "cover", minHeight: 200 }
+          }),
+          // Mensagem sobre a foto
+          React.createElement("div", {
+            style: {
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "linear-gradient(to top, rgba(139,26,74,0.82) 0%, rgba(139,26,74,0.4) 70%, transparent 100%)",
+              padding: "32px 18px 16px",
+              color: "white", fontSize: "clamp(0.85rem,2.5vw,1.05rem)",
+              fontStyle: "italic", fontFamily: "'Georgia','Times New Roman',serif",
+              textShadow: "0 1px 4px rgba(0,0,0,0.4)"
+            }
+          }, foto.msg)
+        ),
+
+        // Navegação
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 16 } },
+          // Botão anterior
+          React.createElement("button", {
+            onClick: prev,
+            style: { background: "rgba(255,255,255,0.65)", backdropFilter: "blur(8px)", border: "1.5px solid rgba(201,24,74,0.25)", borderRadius: "50%", width: 44, height: 44, cursor: "pointer", fontSize: 18, color: "#c9184a", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 12px rgba(201,24,74,0.15)", transition: "transform 0.15s" },
+            onMouseEnter: e => e.currentTarget.style.transform = "scale(1.12)",
+            onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
+          }, "‹"),
+
+          // Bolinhas indicadoras
+          React.createElement("div", { style: { display: "flex", gap: 7 } },
+            ...FOTOS.map((_, i) => React.createElement("div", {
+              key: i,
+              style: { width: i === idx ? 22 : 8, height: 8, borderRadius: 4, background: i === idx ? "#c9184a" : "rgba(201,24,74,0.28)", transition: "all 0.3s", cursor: "pointer" },
+              onClick: () => go(i, i > idx ? 1 : -1)
+            }))
+          ),
+
+          // Botão próximo
+          React.createElement("button", {
+            onClick: next,
+            style: { background: "rgba(255,255,255,0.65)", backdropFilter: "blur(8px)", border: "1.5px solid rgba(201,24,74,0.25)", borderRadius: "50%", width: 44, height: 44, cursor: "pointer", fontSize: 18, color: "#c9184a", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 12px rgba(201,24,74,0.15)", transition: "transform 0.15s" },
+            onMouseEnter: e => e.currentTarget.style.transform = "scale(1.12)",
+            onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
+          }, "›")
+        ),
+
+        // Contador
+        React.createElement("p", { style: { color: "#c0427a", fontSize: "0.82rem", opacity: 0.7, fontStyle: "italic" } }, `${idx + 1} de ${FOTOS.length} 💕`)
+      );
+    }
+
     // Tela de sucesso com carrossel + typewriter
-    function SuccessScreen() {
+    function SuccessScreen({ onShowPhotos }) {
       const [idx, setIdx] = useState(0);
       const [typing, setTyping] = useState(true);
       const [btnVisible, setBtnVisible] = useState(false);
@@ -336,12 +448,20 @@
           onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
         }, "Próxima mensagem 💌"),
 
-        isLast && btnVisible && React.createElement("div", { style: { fontSize: "clamp(1.4rem,5vw,1.9rem)", letterSpacing: 5, animation: "bounceIn 0.5s ease-out" } }, "💕🌸💕🌸💕")
+        isLast && btnVisible && React.createElement(React.Fragment, null,
+          React.createElement("div", { style: { fontSize: "clamp(1.4rem,5vw,1.9rem)", letterSpacing: 5, animation: "bounceIn 0.5s ease-out" } }, "💕🌸💕🌸💕"),
+          React.createElement("button", {
+            onClick: onShowPhotos,
+            style: { marginTop: 4, background: "linear-gradient(135deg,#ff6b9d,#c9184a)", color: "white", border: "none", borderRadius: 50, padding: "13px 36px", fontSize: "clamp(0.9rem,2.8vw,1.05rem)", fontWeight: "bold", cursor: "pointer", boxShadow: "0 6px 24px rgba(201,24,74,0.35)", fontFamily: "inherit", animation: "bounceIn 0.6s ease-out 0.3s both", transition: "transform 0.15s" },
+            onMouseEnter: e => e.currentTarget.style.transform = "scale(1.07)",
+            onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
+          }, "Ver nossas fotos 📸💕")
+        )
       );
     }
 
     // App principal
-    function App({ onYes, phase }) {
+    function App({ onYes, onShowPhotos, phase }) {
       const bg = {
         position: "relative", minHeight: "100dvh", width: "100%", overflow: "hidden",
         display: "flex", alignItems: "center", justifyContent: "center",
@@ -356,16 +476,16 @@
         React.createElement(Petals, { active: phase === "question" }),
         React.createElement(FloatingHearts, { active: phase === "success" }),
 
-        phase === "question"
-          ? React.createElement(QuestionScreen, { onYes })
-          : React.createElement(SuccessScreen)
+        phase === "question" ? React.createElement(QuestionScreen, { onYes })
+        : phase === "success" ? React.createElement(SuccessScreen, { onShowPhotos })
+        : React.createElement(PhotoCarousel)
       );
     }
 
     // Root — gerencia splash + música
     function Root() {
       const [showSplash, setShowSplash] = useState(true);
-      const [phase, setPhase] = useState("question");
+      const [phase, setPhase] = useState("question"); // question | success | photos
       const [playing, setPlaying] = useState(false);
       const audioRef = useRef(null);
       const indexRef = useRef(0);
@@ -398,7 +518,7 @@
         showSplash
           ? React.createElement(SplashScreen, { onEnter: handleEnter })
           : React.createElement(React.Fragment, null,
-              React.createElement(App, { phase, onYes: () => setPhase("success") }),
+              React.createElement(App, { phase, onYes: () => setPhase("success"), onShowPhotos: () => setPhase("photos") }),
 
               // Botão de música
               MUSICAS.length > 0 && React.createElement("button", {
