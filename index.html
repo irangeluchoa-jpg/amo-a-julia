@@ -7,199 +7,370 @@
   <title>💕 Para você</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/framer-motion/10.16.4/framer-motion.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body, #root { width: 100%; min-height: 100dvh; overflow-x: hidden; }
     body { -webkit-font-smoothing: antialiased; }
+
+    @keyframes fall {
+      from { transform: translateY(-40px) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.85; }
+      90%  { opacity: 0.85; }
+      to   { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(0) scale(0); opacity: 0; }
+      20%  { opacity: 1; transform: translateY(-20px) scale(1.2); }
+      80%  { opacity: 1; }
+      100% { transform: translateY(-150px) scale(0.7); opacity: 0; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.13); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.82); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes wiggle {
+      0%   { transform: rotate(0deg); }
+      25%  { transform: rotate(-13deg); }
+      50%  { transform: rotate(13deg); }
+      75%  { transform: rotate(-8deg); }
+      100% { transform: rotate(0deg); }
+    }
+    @keyframes bounceIn {
+      from { opacity: 0; transform: scale(0.7) translateY(18px); }
+      60%  { transform: scale(1.09) translateY(-4px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0; }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      background: #8b1a4a;
+      margin-left: 2px;
+      animation: blink 0.8s step-end infinite;
+      vertical-align: text-bottom;
+      height: 1.1em;
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script>
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
-    // ─── Lista de músicas ─────────────────────────────────────────────────────
-    // Coloque seus .mp3 na pasta "musicas/" no repositório e liste os nomes aqui:
+    // ─── 🎵 Músicas — coloque os .mp3 na pasta musicas/ do repositório ────────
     const MUSICAS = [
       "musicas/vem-ser-minha.mp3",
-      // "musicas/outra-musica.mp3",  <- adicione mais se quiser
+      // "musicas/outra-musica.mp3",
     ];
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ─── 💌 Frases do carrossel ───────────────────────────────────────────────
+    const FRASES = [
+      "Eu também te amo muito! Você é o amor da minha vida. Obrigado por sempre estar comigo nos momentos tristes e felizes. Te amo muito, xuxubah! ❤️",
+      "Eu amo cada detalhe seu, desde o seu sorriso até o jeito que você me faz sentir a pessoa mais especial do mundo. Você brilha mais que qualquer estrela. ✨",
+      "O seu coração é o lugar onde eu sempre quero morar. Cada momento ao seu lado vale mais do que qualquer coisa nesse mundo. 🌸",
+      "Se a vida fosse um filme, eu daria replay em cada momento que passamos juntos. Você é minha protagonista favorita, hoje e sempre. 🎬💕",
+    ];
+    // ─────────────────────────────────────────────────────────────────────────
 
-    function App() {
-      const [phase, setPhase] = useState("question");
-      const [noPos, setNoPos] = useState({ top: "62%", left: "62%" });
-      const [noCount, setNoCount] = useState(0);
+    // Efeito máquina de escrever
+    function Typewriter({ text, speed = 28, onDone }) {
+      const [displayed, setDisplayed] = useState("");
+      const [done, setDone] = useState(false);
+      const i = useRef(0);
+
+      useEffect(() => {
+        setDisplayed("");
+        setDone(false);
+        i.current = 0;
+        const iv = setInterval(() => {
+          i.current++;
+          setDisplayed(text.slice(0, i.current));
+          if (i.current >= text.length) {
+            clearInterval(iv);
+            setDone(true);
+            if (onDone) setTimeout(onDone, 600);
+          }
+        }, speed);
+        return () => clearInterval(iv);
+      }, [text]);
+
+      return React.createElement("span", null,
+        displayed,
+        !done && React.createElement("span", { className: "cursor" })
+      );
+    }
+
+    // Pétalas caindo
+    function Petals({ active }) {
       const [petals, setPetals] = useState([]);
+      const idRef = useRef(0);
+
+      useEffect(() => {
+        if (!active) return;
+        const add = () => setPetals(p => [...p.slice(-18), {
+          id: idRef.current++,
+          left: Math.random() * 100,
+          emoji: Math.random() > 0.5 ? "🌸" : "🌷",
+          size: 14 + Math.random() * 14,
+          dur: 5 + Math.random() * 4,
+          delay: Math.random() * 1.2
+        }]);
+        add();
+        const iv = setInterval(add, 650);
+        return () => clearInterval(iv);
+      }, [active]);
+
+      return React.createElement(React.Fragment, null,
+        ...petals.map(p => React.createElement("div", {
+          key: p.id,
+          style: {
+            position: "absolute", top: 0, left: `${p.left}%`,
+            fontSize: p.size, pointerEvents: "none", userSelect: "none", zIndex: 0,
+            animation: `fall ${p.dur}s ${p.delay}s linear forwards`
+          }
+        }, p.emoji))
+      );
+    }
+
+    // Corações flutuantes
+    function FloatingHearts({ active }) {
       const [hearts, setHearts] = useState([]);
       const idRef = useRef(0);
 
-      // Gera pétalas continuamente
       useEffect(() => {
-        if (phase !== "question") return;
-        const add = () => {
-          setPetals(p => [...p.slice(-16), {
-            id: idRef.current++,
-            left: Math.random() * 100,
-            emoji: Math.random() > 0.5 ? "🌸" : "🌷",
-            size: 14 + Math.random() * 14,
-            dur: 5 + Math.random() * 4,
-            delay: Math.random() * 1.5
-          }]);
-        };
-        add();
-        const iv = setInterval(add, 700);
-        return () => clearInterval(iv);
-      }, [phase]);
-
-      // Chuva de corações no sucesso
-      useEffect(() => {
-        if (phase !== "success") return;
+        if (!active) return;
         const burst = () => {
-          const batch = Array.from({ length: 12 }, () => ({
+          const batch = Array.from({ length: 13 }, () => ({
             id: idRef.current++,
-            left: 10 + Math.random() * 80,
-            bottom: 5 + Math.random() * 40,
+            left: 8 + Math.random() * 84,
+            bottom: 4 + Math.random() * 42,
             size: 18 + Math.random() * 24,
-            dx: (Math.random() - 0.5) * 80
           }));
           setHearts(h => [...h, ...batch]);
-          setTimeout(() => setHearts(h => h.slice(batch.length)), 3000);
+          setTimeout(() => setHearts(h => h.slice(batch.length)), 3200);
         };
         burst();
         const iv = setInterval(burst, 1800);
         return () => clearInterval(iv);
-      }, [phase]);
+      }, [active]);
 
-      const flee = () => {
-        let newTop, newLeft;
-        // Limites seguros para não sair da tela em nenhum dispositivo
-        const minTop = 10, maxTop = 82;
-        const minLeft = 10, maxLeft = 82;
-        do {
-          newTop = minTop + Math.random() * (maxTop - minTop);
-          newLeft = minLeft + Math.random() * (maxLeft - minLeft);
-        } while (
-          Math.abs(newTop - parseFloat(noPos.top)) < 15 &&
-          Math.abs(newLeft - parseFloat(noPos.left)) < 15
-        );
-        setNoPos({ top: `${newTop}%`, left: `${newLeft}%` });
+      return React.createElement(React.Fragment, null,
+        ...hearts.map(h => React.createElement("div", {
+          key: h.id,
+          style: {
+            position: "absolute", left: `${h.left}%`, bottom: `${h.bottom}%`,
+            fontSize: h.size, pointerEvents: "none", userSelect: "none", zIndex: 50,
+            animation: "floatUp 2.6s ease-out forwards"
+          }
+        }, "❤️"))
+      );
+    }
+
+    // Tela splash
+    function SplashScreen({ onEnter }) {
+      return React.createElement("div", {
+        onClick: onEnter,
+        style: {
+          position: "fixed", inset: 0, zIndex: 999,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          background: "radial-gradient(ellipse at 30% 15%, #ffe4ec 0%, #ffc2d4 35%, #ffb7c5 65%, #ff8fab 100%)",
+          cursor: "pointer", fontFamily: "'Georgia','Times New Roman',serif",
+          animation: "fadeIn 0.5s ease-out"
+        }
+      },
+        React.createElement("div", {
+          style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 22, textAlign: "center", padding: "0 32px" }
+        },
+          React.createElement("div", { style: { fontSize: "clamp(56px,14vw,88px)", animation: "pulse 1.8s ease-in-out infinite" } }, "💕"),
+          React.createElement("h1", {
+            style: { fontSize: "clamp(1.5rem,5vw,2.6rem)", color: "#8b1a4a", fontWeight: "bold", textShadow: "2px 2px 14px rgba(255,143,171,0.6)", lineHeight: 1.2 }
+          }, "Tenho algo especial para você"),
+          React.createElement("p", {
+            style: { color: "#c0427a", fontSize: "clamp(0.85rem,2.5vw,1rem)", opacity: 0.85 }
+          }, "Toque para abrir 🌸"),
+          React.createElement("div", {
+            style: {
+              marginTop: 8, background: "linear-gradient(135deg,#ff6b9d,#c9184a)",
+              color: "white", borderRadius: 50, padding: "14px 44px",
+              fontSize: "clamp(0.95rem,3vw,1.15rem)", fontWeight: "bold",
+              boxShadow: "0 8px 32px rgba(201,24,74,0.38)", letterSpacing: "0.04em",
+              animation: "bounceIn 0.8s ease-out 0.3s both"
+            }
+          }, "💖 Abrir")
+        )
+      );
+    }
+
+    // Tela principal com pergunta
+    function QuestionScreen({ onYes }) {
+      const [noPos, setNoPos] = useState({ top: "62%", left: "64%" });
+      const [noCount, setNoCount] = useState(0);
+
+      const flee = useCallback(() => {
+        setNoPos(prev => {
+          let t, l;
+          do {
+            t = 10 + Math.random() * 72;
+            l = 10 + Math.random() * 72;
+          } while (Math.abs(t - parseFloat(prev.top)) < 15 && Math.abs(l - parseFloat(prev.left)) < 15);
+          return { top: `${t}%`, left: `${l}%` };
+        });
         setNoCount(c => c + 1);
-      };
+      }, []);
 
       const noLabels = ["Não 🙄","Tenta de novo 😏","Claro que não!","Nem pense! 🏃","Nunca! 😂","Impossível!","Tá louca?","Para de tentar!"];
 
-      const bgStyle = {
-        position: "relative",
-        minHeight: "100dvh",
-        width: "100%",
-        overflow: "hidden",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "radial-gradient(ellipse at 30% 15%, #ffe4ec 0%, #ffc2d4 35%, #ffb7c5 65%, #ff8fab 100%)",
-        fontFamily: "'Georgia', 'Times New Roman', serif"
-      };
+      const hintMsg = noCount < 3
+        ? "Esse botão não quer ser clicado... 😅"
+        : noCount < 6 ? "Desista! O 'Sim' é o único caminho 💕"
+        : "Você é teimosa hein! 😂❤️";
 
-      return React.createElement("div", { style: bgStyle },
-
-        // Glow blobs
-        React.createElement("div", { style: { position:"absolute", top:-120, right:-120, width:520, height:520, borderRadius:"50%", background:"rgba(255,183,197,0.3)", filter:"blur(70px)", pointerEvents:"none" }}),
-        React.createElement("div", { style: { position:"absolute", bottom:-100, left:-100, width:420, height:420, borderRadius:"50%", background:"rgba(255,143,171,0.22)", filter:"blur(60px)", pointerEvents:"none" }}),
-
-        // Pétalas
-        ...petals.map(p =>
-          React.createElement("div", {
-            key: p.id,
-            style: { position:"absolute", top:0, left:`${p.left}%`, fontSize:p.size, pointerEvents:"none", userSelect:"none", zIndex:0,
-              animation: `fall ${p.dur}s ${p.delay}s linear forwards` }
-          }, p.emoji)
-        ),
-
-        // Corações flutuantes
-        ...hearts.map(h =>
-          React.createElement("div", {
-            key: h.id,
-            style: { position:"absolute", left:`${h.left}%`, bottom:`${h.bottom}%`, fontSize:h.size, pointerEvents:"none", userSelect:"none", zIndex:50,
-              animation: `floatUp 2.5s ease-out forwards` }
-          }, "❤️")
-        ),
-
-        // FASE: PERGUNTA
-        phase === "question" && React.createElement("div", {
-          style: { position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:28, padding:"0 24px", textAlign:"center", animation:"fadeInUp 0.6s ease-out" }
+      return React.createElement(React.Fragment, null,
+        // Conteúdo central
+        React.createElement("div", {
+          style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, padding: "0 24px", textAlign: "center", animation: "fadeInUp 0.6s ease-out" }
         },
-          React.createElement("div", { style: { fontSize:"clamp(60px,14vw,96px)", lineHeight:1, animation:"pulse 1.8s ease-in-out infinite" }}, "💕"),
+          React.createElement("div", { style: { fontSize: "clamp(60px,14vw,96px)", lineHeight: 1, animation: "pulse 1.8s ease-in-out infinite" } }, "💕"),
           React.createElement("div", null,
-            React.createElement("h1", { style: { fontSize:"clamp(2rem,7vw,4rem)", color:"#8b1a4a", fontWeight:"bold", textShadow:"2px 2px 14px rgba(255,143,171,0.55)", letterSpacing:"-0.02em", lineHeight:1.1 }}, "Você me ama?"),
-            React.createElement("p", { style: { color:"#c0427a", marginTop:10, fontSize:"clamp(0.85rem,2.5vw,1.05rem)" }}, "Pense bem antes de responder... 🌸")
+            React.createElement("h1", { style: { fontSize: "clamp(2rem,7vw,4rem)", color: "#8b1a4a", fontWeight: "bold", textShadow: "2px 2px 14px rgba(255,143,171,0.55)", letterSpacing: "-0.02em", lineHeight: 1.1 } }, "Você me ama?"),
+            React.createElement("p", { style: { color: "#c0427a", marginTop: 10, fontSize: "clamp(0.85rem,2.5vw,1.05rem)" } }, "Pense bem antes de responder... 🌸")
           ),
+          // Botão SIM
           React.createElement("button", {
-            onClick: () => setPhase("success"),
-            style: { background:"linear-gradient(135deg,#ff6b9d,#c9184a)", color:"white", border:"none", borderRadius:50, padding:"16px 52px", fontSize:"clamp(1rem,3.5vw,1.3rem)", fontWeight:"bold", cursor:"pointer", boxShadow:"0 8px 32px rgba(201,24,74,0.38)", letterSpacing:"0.04em", fontFamily:"inherit", transition:"transform 0.15s" },
-            onMouseEnter: e => e.target.style.transform = "scale(1.08)",
-            onMouseLeave: e => e.target.style.transform = "scale(1)"
+            onClick: onYes,
+            style: { background: "linear-gradient(135deg,#ff6b9d,#c9184a)", color: "white", border: "none", borderRadius: 50, padding: "16px 52px", fontSize: "clamp(1rem,3.5vw,1.3rem)", fontWeight: "bold", cursor: "pointer", boxShadow: "0 8px 32px rgba(201,24,74,0.38)", letterSpacing: "0.04em", fontFamily: "inherit", transition: "transform 0.15s", position: "relative", zIndex: 15 },
+            onMouseEnter: e => e.currentTarget.style.transform = "scale(1.08)",
+            onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
           }, "💖 Sim, claro!"),
-          noCount > 0 && React.createElement("p", { style: { color:"#c0427a", fontSize:"clamp(0.7rem,2vw,0.85rem)", opacity:0.7, fontStyle:"italic" }},
-            noCount < 3 ? "Esse botão não quer ser clicado... 😅" : noCount < 6 ? "Desista! O 'Sim' é o único caminho 💕" : "Você é teimosa hein! 😂❤️"
-          )
+          noCount > 0 && React.createElement("p", { style: { color: "#c0427a", fontSize: "clamp(0.7rem,2vw,0.85rem)", opacity: 0.75, fontStyle: "italic" } }, hintMsg)
         ),
 
-        // FASE: SUCESSO
-        phase === "success" && React.createElement("div", {
-          style: { position:"relative", zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:24, padding:"0 24px", textAlign:"center", maxWidth:480, margin:"0 auto", animation:"scaleIn 0.7s cubic-bezier(0.34,1.56,0.64,1)" }
-        },
-          React.createElement("div", { style: { fontSize:"clamp(56px,13vw,90px)", lineHeight:1, animation:"wiggle 0.7s ease-out 0.3s" }}, "❤️"),
-          React.createElement("h2", { style: { fontSize:"clamp(1.6rem,5.5vw,2.6rem)", color:"#8b1a4a", fontWeight:"bold", textShadow:"1px 1px 12px rgba(255,143,171,0.65)", lineHeight:1.2 }}, "Eu sabia! 🥰"),
-          React.createElement("div", { style: { background:"rgba(255,255,255,0.52)", backdropFilter:"blur(14px)", WebkitBackdropFilter:"blur(14px)", borderRadius:24, padding:"clamp(20px,5vw,34px)", border:"1.5px solid rgba(255,143,171,0.38)", boxShadow:"0 8px 42px rgba(201,24,74,0.13)" }},
-            React.createElement("p", { style: { color:"#6b1535", fontSize:"clamp(0.9rem,2.5vw,1.15rem)", lineHeight:1.8, fontStyle:"italic" }},
-              "Eu também te amo muito! Você é o amor da minha vida. Obrigado por sempre estar comigo nos momentos tristes e felizes."
-            ),
-            React.createElement("p", { style: { color:"#c9184a", fontSize:"clamp(1rem,3vw,1.3rem)", marginTop:18, fontWeight:"bold" }},
-              "Te amo muito xuxubah! ❤️❤️"
-            )
-          ),
-          React.createElement("div", { style: { fontSize:"clamp(1.4rem,5vw,2rem)", letterSpacing:6 }}, "💕🌸💕🌸💕")
-        ),
-
-        // BOTÃO NÃO - foge
-        phase === "question" && React.createElement("button", {
+        // Botão NÃO — foge com position:fixed
+        React.createElement("button", {
           onMouseEnter: flee,
           onTouchStart: e => { e.preventDefault(); flee(); },
           style: {
-            position:"fixed",
-            top: noPos.top,
-            left: noPos.left,
+            position: "fixed",
+            top: noPos.top, left: noPos.left,
             transform: "translate(-50%,-50%)",
-            background:"rgba(255,255,255,0.48)",
-            backdropFilter:"blur(8px)",
-            WebkitBackdropFilter:"blur(8px)",
-            color:"#c9184a",
-            border:"1.5px solid rgba(201,24,74,0.28)",
-            borderRadius:50,
-            padding:"12px 30px",
-            fontSize:"clamp(0.8rem,2.5vw,1rem)",
-            cursor:"pointer",
-            fontWeight:"600",
-            zIndex:20,
-            fontFamily:"inherit",
-            whiteSpace:"nowrap",
-            boxShadow:"0 4px 16px rgba(201,24,74,0.12)",
-            transition:"top 0.4s cubic-bezier(0.34,1.56,0.64,1), left 0.4s cubic-bezier(0.34,1.56,0.64,1)"
+            background: "rgba(255,255,255,0.52)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            color: "#c9184a", border: "1.5px solid rgba(201,24,74,0.28)", borderRadius: 50,
+            padding: "12px 30px", fontSize: "clamp(0.8rem,2.5vw,1rem)", cursor: "pointer",
+            fontWeight: "600", zIndex: 20, fontFamily: "inherit", whiteSpace: "nowrap",
+            boxShadow: "0 4px 16px rgba(201,24,74,0.12)",
+            transition: "top 0.38s cubic-bezier(0.34,1.56,0.64,1), left 0.38s cubic-bezier(0.34,1.56,0.64,1)"
           }
         }, noLabels[Math.min(noCount, noLabels.length - 1)])
       );
     }
 
-    function Root() {
-      const [showSplash, setShowSplash] = React.useState(true);
-      const audioRef = React.useRef(null);
-      const [playing, setPlaying] = React.useState(false);
-      const indexRef = React.useRef(0);
+    // Tela de sucesso com carrossel + typewriter
+    function SuccessScreen() {
+      const [idx, setIdx] = useState(0);
+      const [typing, setTyping] = useState(true);
+      const [btnVisible, setBtnVisible] = useState(false);
 
-      const next = () => {
+      const nextFrase = () => {
+        if (idx < FRASES.length - 1) {
+          setBtnVisible(false);
+          setTyping(false);
+          setTimeout(() => {
+            setIdx(i => i + 1);
+            setTyping(true);
+          }, 300);
+        }
+      };
+
+      const handleDone = () => setBtnVisible(true);
+
+      const isLast = idx === FRASES.length - 1;
+
+      return React.createElement("div", {
+        style: { position: "relative", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 22, padding: "24px 24px", textAlign: "center", maxWidth: 500, margin: "0 auto", animation: "scaleIn 0.7s cubic-bezier(0.34,1.56,0.64,1)" }
+      },
+        React.createElement("div", { style: { fontSize: "clamp(50px,12vw,82px)", lineHeight: 1, animation: "wiggle 0.7s ease-out 0.3s both" } }, "❤️"),
+        React.createElement("h2", { style: { fontSize: "clamp(1.5rem,5vw,2.4rem)", color: "#8b1a4a", fontWeight: "bold", textShadow: "1px 1px 12px rgba(255,143,171,0.65)", lineHeight: 1.2 } }, "Eu sabia! 🥰"),
+
+        // Card da frase
+        React.createElement("div", {
+          style: { background: "rgba(255,255,255,0.55)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", borderRadius: 24, padding: "clamp(18px,5vw,32px)", border: "1.5px solid rgba(255,143,171,0.38)", boxShadow: "0 8px 42px rgba(201,24,74,0.13)", minHeight: 120, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }
+        },
+          // Indicador de frase
+          React.createElement("div", { style: { display: "flex", gap: 6, justifyContent: "center", marginBottom: 4 } },
+            ...FRASES.map((_, i) => React.createElement("div", {
+              key: i,
+              style: { width: i === idx ? 20 : 7, height: 7, borderRadius: 4, background: i === idx ? "#c9184a" : "rgba(201,24,74,0.25)", transition: "all 0.3s" }
+            }))
+          ),
+          typing && React.createElement("p", {
+            key: idx,
+            style: { color: "#6b1535", fontSize: "clamp(0.88rem,2.4vw,1.1rem)", lineHeight: 1.8, fontStyle: "italic", animation: "fadeIn 0.3s ease-out" }
+          },
+            React.createElement(Typewriter, { text: FRASES[idx], speed: 25, onDone: handleDone })
+          )
+        ),
+
+        // Botão próxima / fim
+        btnVisible && !isLast && React.createElement("button", {
+          onClick: nextFrase,
+          style: { background: "linear-gradient(135deg,#ff6b9d,#c9184a)", color: "white", border: "none", borderRadius: 50, padding: "13px 36px", fontSize: "clamp(0.9rem,2.8vw,1.1rem)", fontWeight: "bold", cursor: "pointer", boxShadow: "0 6px 24px rgba(201,24,74,0.35)", fontFamily: "inherit", animation: "bounceIn 0.5s ease-out", transition: "transform 0.15s" },
+          onMouseEnter: e => e.currentTarget.style.transform = "scale(1.07)",
+          onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
+        }, "Próxima mensagem 💌"),
+
+        isLast && btnVisible && React.createElement("div", { style: { fontSize: "clamp(1.4rem,5vw,1.9rem)", letterSpacing: 5, animation: "bounceIn 0.5s ease-out" } }, "💕🌸💕🌸💕")
+      );
+    }
+
+    // App principal
+    function App({ onYes, phase }) {
+      const bg = {
+        position: "relative", minHeight: "100dvh", width: "100%", overflow: "hidden",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "radial-gradient(ellipse at 30% 15%, #ffe4ec 0%, #ffc2d4 35%, #ffb7c5 65%, #ff8fab 100%)",
+        fontFamily: "'Georgia','Times New Roman',serif"
+      };
+
+      return React.createElement("div", { style: bg },
+        React.createElement("div", { style: { position: "absolute", top: -120, right: -120, width: 520, height: 520, borderRadius: "50%", background: "rgba(255,183,197,0.28)", filter: "blur(70px)", pointerEvents: "none" } }),
+        React.createElement("div", { style: { position: "absolute", bottom: -100, left: -100, width: 420, height: 420, borderRadius: "50%", background: "rgba(255,143,171,0.2)", filter: "blur(60px)", pointerEvents: "none" } }),
+
+        React.createElement(Petals, { active: phase === "question" }),
+        React.createElement(FloatingHearts, { active: phase === "success" }),
+
+        phase === "question"
+          ? React.createElement(QuestionScreen, { onYes })
+          : React.createElement(SuccessScreen)
+      );
+    }
+
+    // Root — gerencia splash + música
+    function Root() {
+      const [showSplash, setShowSplash] = useState(true);
+      const [phase, setPhase] = useState("question");
+      const [playing, setPlaying] = useState(false);
+      const audioRef = useRef(null);
+      const indexRef = useRef(0);
+
+      const nextTrack = () => {
         if (!audioRef.current || MUSICAS.length === 0) return;
         indexRef.current = (indexRef.current + 1) % MUSICAS.length;
         audioRef.current.src = MUSICAS[indexRef.current];
@@ -218,77 +389,41 @@
       const toggleMusic = () => {
         if (!audioRef.current) return;
         if (playing) { audioRef.current.pause(); setPlaying(false); }
-        else { audioRef.current.play(); setPlaying(true); }
+        else { audioRef.current.play().then(() => setPlaying(true)).catch(() => {}); }
       };
 
       return React.createElement(React.Fragment, null,
-        React.createElement("audio", { ref: audioRef, onEnded: next }),
+        React.createElement("audio", { ref: audioRef, onEnded: nextTrack }),
+
         showSplash
           ? React.createElement(SplashScreen, { onEnter: handleEnter })
           : React.createElement(React.Fragment, null,
-              React.createElement(App),
+              React.createElement(App, { phase, onYes: () => setPhase("success") }),
+
+              // Botão de música
               MUSICAS.length > 0 && React.createElement("button", {
                 onClick: toggleMusic,
                 style: {
-                  position:"fixed", bottom:18, right:18, zIndex:100,
-                  background:"rgba(255,255,255,0.72)", backdropFilter:"blur(10px)",
-                  WebkitBackdropFilter:"blur(10px)",
-                  border:"1.5px solid rgba(201,24,74,0.25)", borderRadius:50,
-                  padding:"10px 20px", cursor:"pointer",
-                  boxShadow:"0 4px 20px rgba(201,24,74,0.18)",
-                  display:"flex", alignItems:"center", gap:8,
-                  color:"#c9184a", fontWeight:600, fontFamily:"inherit",
-                  transition:"transform 0.15s", fontSize:16
+                  position: "fixed", bottom: 18, right: 18, zIndex: 100,
+                  background: "rgba(255,255,255,0.72)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+                  border: "1.5px solid rgba(201,24,74,0.25)", borderRadius: 50,
+                  padding: "10px 20px", cursor: "pointer",
+                  boxShadow: "0 4px 20px rgba(201,24,74,0.18)",
+                  display: "flex", alignItems: "center", gap: 8,
+                  color: "#c9184a", fontWeight: 600, fontFamily: "inherit",
+                  transition: "transform 0.15s", fontSize: 16
                 },
                 onMouseEnter: e => e.currentTarget.style.transform = "scale(1.1)",
                 onMouseLeave: e => e.currentTarget.style.transform = "scale(1)"
               },
-                React.createElement("span", { style:{fontSize:20} }, playing ? "🔇" : "🎵"),
+                React.createElement("span", { style: { fontSize: 20 } }, playing ? "🔇" : "🎵"),
                 React.createElement("span", null, playing ? "Pausar" : "Música")
               )
             )
       );
     }
+
     ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Root));
   </script>
-  <style>
-    @keyframes fall {
-      from { transform: translateY(-40px) rotate(0deg); opacity: 0; }
-      10% { opacity: 0.9; }
-      90% { opacity: 0.9; }
-      to { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-    }
-    @keyframes floatUp {
-      0%   { transform: translateY(0) scale(0); opacity: 0; }
-      20%  { opacity: 1; transform: translateY(-20px) scale(1.2); }
-      80%  { opacity: 1; }
-      100% { transform: translateY(-140px) scale(0.8); opacity: 0; }
-    }
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.12); }
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.8); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-    @keyframes bounceIn {
-      from { opacity:0; transform:scale(0.7) translateY(20px); }
-      60%  { transform:scale(1.08) translateY(-4px); }
-      to   { opacity:1; transform:scale(1) translateY(0); }
-    }
-    @keyframes wiggle {
-      0%  { transform: rotate(0deg); }
-      25% { transform: rotate(-12deg); }
-      50% { transform: rotate(12deg); }
-      75% { transform: rotate(-8deg); }
-      100%{ transform: rotate(0deg); }
-    }
-    button:active { transform: scale(0.95) translate(-50%,-50%) !important; }
-  </style>
 </body>
 </html>
